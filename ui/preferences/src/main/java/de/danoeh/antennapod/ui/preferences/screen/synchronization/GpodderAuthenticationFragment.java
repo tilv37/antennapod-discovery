@@ -10,6 +10,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ViewFlipper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -274,6 +275,7 @@ public class GpodderAuthenticationFragment extends DialogFragment {
         final Button sync = view.findViewById(R.id.butSyncNow);
 
         sync.setOnClickListener(v -> {
+            Toast.makeText(getContext(), R.string.sync_status_started, Toast.LENGTH_SHORT).show();
             dismiss();
             SynchronizationQueue.getInstance().syncImmediately();
         });

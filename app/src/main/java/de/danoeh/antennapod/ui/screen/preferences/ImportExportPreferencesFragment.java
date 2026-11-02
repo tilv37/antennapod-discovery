@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultLauncher;
@@ -124,12 +125,14 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
     private void setupStorageScreen() {
         findPreference(PREF_OPML_EXPORT).setOnPreferenceClickListener(
                 preference -> {
+                    Toast.makeText(getContext(), R.string.opening_file_picker, Toast.LENGTH_SHORT).show();
                     openExportPathPicker(Export.OPML, chooseOpmlExportPathLauncher);
                     return true;
                 }
         );
         findPreference(PREF_HTML_EXPORT).setOnPreferenceClickListener(
                 preference -> {
+                    Toast.makeText(getContext(), R.string.opening_file_picker, Toast.LENGTH_SHORT).show();
                     openExportPathPicker(Export.HTML, chooseHtmlExportPathLauncher);
                     return true;
                 });
@@ -151,6 +154,7 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
         findPreference(PREF_DATABASE_EXPORT).setOnPreferenceClickListener(
                 preference -> {
                     try {
+                        Toast.makeText(getContext(), R.string.opening_file_picker, Toast.LENGTH_SHORT).show();
                         backupDatabaseLauncher.launch(dateStampFilename(DATABASE_EXPORT_FILENAME));
                     } catch (ActivityNotFoundException e) {
                         Snackbar.make(getView(), R.string.unable_to_start_system_file_manager, Snackbar.LENGTH_LONG)
@@ -173,11 +177,14 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
                     } else {
                         UserPreferences.setAutomaticExportFolder(null);
                         AutomaticDatabaseExportWorker.enqueueIfNeeded(getContext(), false);
+                        Toast.makeText(getContext(), R.string.on_demand_config_setting_changed,
+                                Toast.LENGTH_SHORT).show();
                     }
                     return true;
                 });
         findPreference(PREF_FAVORITE_EXPORT).setOnPreferenceClickListener(
                 preference -> {
+                    Toast.makeText(getContext(), R.string.opening_file_picker, Toast.LENGTH_SHORT).show();
                     openExportPathPicker(Export.FAVORITES, chooseFavoritesExportPathLauncher);
                     return true;
                 });

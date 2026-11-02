@@ -11,6 +11,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
@@ -97,10 +98,14 @@ public class SynchronizationPreferencesFragment extends AnimatedPreferenceFragme
                     return true;
                 });
         findPreference(PREFERENCE_SYNC).setOnPreferenceClickListener(preference -> {
+            Toast.makeText(getContext(), R.string.sync_status_started, Toast.LENGTH_SHORT).show();
+            ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(R.string.sync_status_started);
             SynchronizationQueue.getInstance().syncImmediately();
             return true;
         });
         findPreference(PREFERENCE_FORCE_FULL_SYNC).setOnPreferenceClickListener(preference -> {
+            Toast.makeText(getContext(), R.string.sync_status_started, Toast.LENGTH_SHORT).show();
+            ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(R.string.sync_status_started);
             SynchronizationQueue.getInstance().fullSync();
             return true;
         });
@@ -121,8 +126,8 @@ public class SynchronizationPreferencesFragment extends AnimatedPreferenceFragme
         if (loggedIn) {
             SynchronizationProvider selectedProvider =
                     SynchronizationProvider.fromIdentifier(getSelectedSyncProviderKey());
-            preferenceHeader.setTitle("");
-            preferenceHeader.setSummary(getProviderSummary(selectedProvider));
+            preferenceHeader.setTitle(getProviderShortName(selectedProvider));
+            preferenceHeader.setSummary(getConfigSummary(selectedProvider));
             preferenceHeader.setIcon(getProviderIcon(selectedProvider));
             preferenceHeader.setOnPreferenceClickListener(null);
         } else {
@@ -244,6 +249,33 @@ public class SynchronizationPreferencesFragment extends AnimatedPreferenceFragme
             default:
                 return R.string.sync_status_error;
         }
+    }
+
+    private @StringRes int getProviderShortName(SynchronizationProvider provider) {
+        switch (provider) {
+            case GPODDER_NET:
+                return R.string.synchronization_provider_gpodder_net;
+            case NEXTCLOUD_GPODDER:
+                return R.string.synchronization_provider_nextcloud;
+            default:
+                return R.string.sync_status_error;
+        }
+    }
+
+    private String getConfigSummary(SynchronizationProvider provider) {
+        StringBuilder config = new StringBuilder()
+                .append(getString(R.string.synchronization_config_server,
+                        SynchronizationCredentials.getHosturl()))
+                .append("\n")
+                .append(getString(R.string.synchronization_config_username,
+                        SynchronizationCredentials.getUsername()));
+        if (provider == SynchronizationProvider.GPODDER_NET) {
+            String deviceId = SynchronizationCredentials.getDeviceId();
+            if (deviceId != null && !deviceId.isEmpty()) {
+                config.append("\n").append(getString(R.string.synchronization_config_device, deviceId));
+            }
+        }
+        return config.toString();
     }
 
     private @DrawableRes int getProviderIcon(SynchronizationProvider provider) {
