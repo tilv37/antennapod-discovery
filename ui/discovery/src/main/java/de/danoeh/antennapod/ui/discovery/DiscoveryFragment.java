@@ -9,6 +9,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.AbsListView;
 import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ProgressBar;
@@ -17,6 +18,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.android.material.textfield.TextInputLayout;
@@ -45,7 +48,11 @@ import java.util.Map;
  */
 public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemClickListener {
     public static final String TAG = "DiscoveryFragment";
-    private static final int NUM_OF_TOP_PODCASTS = 25;
+    private static final int INITIAL_TOP_PODCASTS = 50;
+    private static final int TOP_PODCASTS_STEP = 50;
+    private static final int MAX_TOP_PODCASTS = 200;
+    private int currentLimit = INITIAL_TOP_PODCASTS;
+    private boolean loadingMore = false;
     private SharedPreferences prefs;
 
     /**
@@ -64,10 +71,18 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
     private List<PodcastSearchResult> searchResults;
     private List<PodcastSearchResult> topList;
     private Disposable disposable;
-    private String countryCode = "US";
+    private String countryCode = "CN";
+    private String genreId = "";
     private boolean hidden;
     private boolean needsConfirm;
     private MaterialToolbar toolbar;
+    private ChipGroup genreChipGroup;
+
+    private static final String[] GENRE_IDS = {"", "1318", "1321", "1489", "1303", "1324", "1302", "1317", "1305"};
+    private static final int[] GENRE_LABELS = {R.string.discover_genre_all, R.string.discover_genre_technology,
+        R.string.discover_genre_business, R.string.discover_genre_news, R.string.discover_genre_comedy,
+        R.string.discover_genre_society, R.string.discover_genre_education, R.string.discover_genre_health,
+        R.string.discover_genre_kids};
 
     public DiscoveryFragment() {
         // Required empty public constructor
@@ -98,7 +113,8 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         prefs = getActivity().getSharedPreferences(ItunesTopListLoader.PREFS, Context.MODE_PRIVATE);
-        countryCode = prefs.getString(ItunesTopListLoader.PREF_KEY_COUNTRY_CODE, Locale.getDefault().getCountry());
+        countryCode = prefs.getString(ItunesTopListLoader.PREF_KEY_COUNTRY_CODE, "CN");
+        genreId = prefs.getString(ItunesTopListLoader.PREF_KEY_GENRE_ID, "");
         hidden = prefs.getBoolean(ItunesTopListLoader.PREF_KEY_HIDDEN_DISCOVERY_COUNTRY, false);
         needsConfirm = prefs.getBoolean(ItunesTopListLoader.PREF_KEY_NEEDS_CONFIRM, true);
     }
@@ -118,6 +134,9 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
         discoverHideItem.setChecked(hidden);
         toolbar.setOnMenuItemClickListener(this);
 
+        genreChipGroup = root.findViewById(R.id.genreChipGroup);
+        setupGenreChips();
+
         //Show information about the podcast when the list item is clicked
         gridView.setOnItemClickListener((parent, view1, position, id) -> {
             PodcastSearchResult podcast = searchResults.get(position);
@@ -126,14 +145,56 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
             }
             startActivity(new OnlineFeedviewActivityStarter(getContext(), podcast.feedUrl).getIntent());
         });
+        gridView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+            }
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisible, int visibleCount, int totalCount) {
+                if (loadingMore || searchResults == null || searchResults.isEmpty()) {
+                    return;
+                }
+                if (currentLimit >= MAX_TOP_PODCASTS || searchResults.size() < currentLimit) {
+                    return;
+                }
+                if (firstVisible + visibleCount >= totalCount - 4) {
+                    loadingMore = true;
+                    currentLimit = Math.min(currentLimit + TOP_PODCASTS_STEP, MAX_TOP_PODCASTS);
+                    loadToplist(countryCode, genreId);
+                }
+            }
+        });
 
         progressBar = root.findViewById(R.id.progressBar);
         txtvError = root.findViewById(R.id.txtvError);
         butRetry = root.findViewById(R.id.butRetry);
         txtvEmpty = root.findViewById(android.R.id.empty);
 
-        loadToplist(countryCode);
+        loadToplist(countryCode, genreId);
         return root;
+    }
+
+    private void setupGenreChips() {
+        genreChipGroup.removeAllViews();
+        for (int i = 0; i < GENRE_IDS.length; i++) {
+            Chip chip = new Chip(getContext());
+            chip.setText(GENRE_LABELS[i]);
+            chip.setCheckable(true);
+            chip.setChecked(GENRE_IDS[i].equals(genreId));
+            final String id = GENRE_IDS[i];
+            chip.setOnClickListener(v -> {
+                genreId = id;
+                currentLimit = INITIAL_TOP_PODCASTS;
+                prefs.edit().putString(ItunesTopListLoader.PREF_KEY_GENRE_ID, genreId).apply();
+                for (int j = 0; j < genreChipGroup.getChildCount(); j++) {
+                    Chip other = (Chip) genreChipGroup.getChildAt(j);
+                    other.setChecked(other == chip);
+                }
+                loadToplist(countryCode, genreId);
+            });
+            genreChipGroup.addView(chip);
+        }
     }
 
     @Override
@@ -145,16 +206,18 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
         adapter = null;
     }
 
-    private void loadToplist(String country) {
+    private void loadToplist(String country, String genre) {
         if (disposable != null) {
             disposable.dispose();
         }
-
-        gridView.setVisibility(View.GONE);
-        txtvError.setVisibility(View.GONE);
-        butRetry.setVisibility(View.GONE);
-        butRetry.setText(R.string.retry_label);
-        txtvEmpty.setVisibility(View.GONE);
+        final boolean isAppend = loadingMore;
+        if (!isAppend) {
+            gridView.setVisibility(View.GONE);
+            txtvError.setVisibility(View.GONE);
+            butRetry.setVisibility(View.GONE);
+            butRetry.setText(R.string.retry_label);
+            txtvEmpty.setVisibility(View.GONE);
+        }
         progressBar.setVisibility(View.VISIBLE);
 
         if (hidden) {
@@ -175,7 +238,7 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
             butRetry.setOnClickListener(v -> {
                 prefs.edit().putBoolean(ItunesTopListLoader.PREF_KEY_NEEDS_CONFIRM, false).apply();
                 needsConfirm = false;
-                loadToplist(country);
+                loadToplist(country, genre);
             });
             txtvEmpty.setVisibility(View.GONE);
             progressBar.setVisibility(View.GONE);
@@ -183,21 +246,25 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
         }
 
         ItunesTopListLoader loader = new ItunesTopListLoader(getContext());
+        final String loadGenre = genre;
+        final int fetchLimit = currentLimit;
         disposable = Observable.fromCallable(() ->
-                        loader.loadToplist(country, NUM_OF_TOP_PODCASTS, DBReader.getFeedList()))
+                        loader.loadToplist(country, loadGenre, fetchLimit, DBReader.getFeedList()))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                     podcasts -> {
                         progressBar.setVisibility(View.GONE);
+                        loadingMore = false;
                         topList = podcasts;
                         updateData(topList);
                     }, error -> {
                         Log.e(TAG, Log.getStackTraceString(error));
                         progressBar.setVisibility(View.GONE);
+                        loadingMore = false;
                         txtvError.setText(error.getMessage());
                         txtvError.setVisibility(View.VISIBLE);
-                        butRetry.setOnClickListener(v -> loadToplist(country));
+                        butRetry.setOnClickListener(v -> loadToplist(country, loadGenre));
                         butRetry.setVisibility(View.VISIBLE);
                     });
     }
@@ -211,7 +278,9 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
             prefs.edit().putBoolean(ItunesTopListLoader.PREF_KEY_HIDDEN_DISCOVERY_COUNTRY, hidden).apply();
 
             EventBus.getDefault().post(new DiscoveryDefaultUpdateEvent());
-            loadToplist(countryCode);
+            currentLimit = INITIAL_TOP_PODCASTS;
+            loadingMore = false;
+            loadToplist(countryCode, genreId);
             return true;
         } else if (itemId == R.id.discover_countries_item) {
 
@@ -265,7 +334,9 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
                 prefs.edit().putString(ItunesTopListLoader.PREF_KEY_COUNTRY_CODE, countryCode).apply();
 
                 EventBus.getDefault().post(new DiscoveryDefaultUpdateEvent());
-                loadToplist(countryCode);
+                currentLimit = INITIAL_TOP_PODCASTS;
+                loadingMore = false;
+                loadToplist(countryCode, genreId);
             });
             builder.setNegativeButton(R.string.cancel_label, null);
             builder.show();

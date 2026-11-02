@@ -901,6 +901,15 @@
     <string name="discover_more">Discover more »</string>
     <string name="discover_powered_by_itunes">Suggestions by Apple Podcasts</string>
     <string name="discover_confirm">Show suggestions</string>
+    <string name="discover_genre_all">All</string>
+    <string name="discover_genre_technology">Technology</string>
+    <string name="discover_genre_business">Business</string>
+    <string name="discover_genre_news">News</string>
+    <string name="discover_genre_comedy">Comedy</string>
+    <string name="discover_genre_society">Society &amp; Culture</string>
+    <string name="discover_genre_education">Education</string>
+    <string name="discover_genre_health">Health &amp; Fitness</string>
+    <string name="discover_genre_kids">Kids &amp; Family</string>
     <string name="search_powered_by">Results by %1$s</string>
     <string name="select_country">Select country</string>
 

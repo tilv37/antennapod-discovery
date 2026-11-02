@@ -89,6 +89,7 @@ public class OnlineSearchFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View root = inflater.inflate(R.layout.fragment_online_search, container, false);
+        root.findViewById(R.id.genreScroll).setVisibility(View.GONE);
         gridView = root.findViewById(R.id.gridView);
         adapter = new OnlineSearchAdapter(getActivity(), new ArrayList<>());
         gridView.setAdapter(adapter);

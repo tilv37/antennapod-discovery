@@ -29,7 +29,6 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -99,8 +98,7 @@ public class QuickFeedDiscoveryFragment extends Fragment implements AdapterView.
 
         ItunesTopListLoader loader = new ItunesTopListLoader(getContext());
         SharedPreferences prefs = getActivity().getSharedPreferences(ItunesTopListLoader.PREFS, MODE_PRIVATE);
-        String countryCode = prefs.getString(ItunesTopListLoader.PREF_KEY_COUNTRY_CODE,
-                Locale.getDefault().getCountry());
+        String countryCode = prefs.getString(ItunesTopListLoader.PREF_KEY_COUNTRY_CODE, "CN");
         if (prefs.getBoolean(ItunesTopListLoader.PREF_KEY_HIDDEN_DISCOVERY_COUNTRY, false)) {
             viewBinding.errorLabel.setText(R.string.discover_is_hidden);
             viewBinding.errorContainer.setVisibility(View.VISIBLE);
