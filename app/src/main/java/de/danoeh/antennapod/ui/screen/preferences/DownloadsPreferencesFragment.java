@@ -2,6 +2,7 @@ package de.danoeh.antennapod.ui.screen.preferences;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.widget.Toast;
 import androidx.preference.PreferenceManager;
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.net.download.serviceinterface.FeedUpdateManager;
@@ -82,6 +83,7 @@ public class DownloadsPreferencesFragment extends AnimatedPreferenceFragment
         if (UserPreferences.PREF_UPDATE_INTERVAL_MINUTES.equals(key)
                 || UserPreferences.PREF_MOBILE_UPDATE.equals(key)) {
             FeedUpdateManager.getInstance().restartUpdateAlarm(getContext(), true);
+            Toast.makeText(getContext(), R.string.on_demand_config_setting_changed, Toast.LENGTH_SHORT).show();
         }
     }
 }

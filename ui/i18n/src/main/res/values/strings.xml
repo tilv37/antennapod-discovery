@@ -778,6 +778,12 @@
     <string name="synchronization_force_sync_summary">Re-synchronize all subscriptions and episode states</string>
     <string name="synchronization_logout">Logout</string>
     <string name="synchronization_login_status">Logged in as %1$s on %2$s.\n\nYou can choose your synchronization provider again once you have logged out.</string>
+    <string name="synchronization_provider_gpodder_net">Gpodder.net</string>
+    <string name="synchronization_provider_nextcloud">Nextcloud</string>
+    <string name="synchronization_config_server">Server: %1$s</string>
+    <string name="synchronization_config_username">Username: %1$s</string>
+    <string name="synchronization_config_device">Device: %1$s</string>
+    <string name="opening_file_picker">Opening file picker…</string>
     <string name="pref_synchronization_logout_toast">Logout was successful</string>
     <string name="gpodnetsync_error_title">gpodder.net sync error</string>
     <string name="gpodnetsync_error_descr">An error occurred during syncing:\u0020</string>
