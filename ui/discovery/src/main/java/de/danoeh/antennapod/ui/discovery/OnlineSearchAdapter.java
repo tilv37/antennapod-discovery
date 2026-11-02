@@ -82,7 +82,7 @@ public class OnlineSearchAdapter extends ArrayAdapter<PodcastSearchResult> {
                 .load(podcast.imageUrl)
                 .apply(new RequestOptions()
                     .placeholder(ImagePlaceholder.getDrawable(context, radius))
-                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                    .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
                     .transform(new FitCenter(),
                             new RoundedCorners((int) radius))
                     .dontAnimate())

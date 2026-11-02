@@ -2,6 +2,7 @@ package de.danoeh.antennapod.ui.discovery;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -14,6 +15,7 @@ import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
@@ -54,14 +56,15 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
     private static final int INITIAL_TOP_PODCASTS = 50;
     private static final int TOP_PODCASTS_STEP = 50;
     private static final int MAX_TOP_PODCASTS = 200;
-    private static final int INITIAL_EPISODE_WINDOW = 30;
-    private static final int EPISODE_WINDOW_STEP = 30;
-    private static final int MAX_EPISODE_WINDOW = 120;
+    private static final int INITIAL_EPISODE_WINDOW = 12;
+    private static final int EPISODE_WINDOW_STEP = 12;
+    private static final int MAX_EPISODE_WINDOW = 96;
     private static final String CONTENT_SHOWS = "shows";
     private static final String CONTENT_EPISODES = "episodes";
     private int currentLimit = INITIAL_TOP_PODCASTS;
     private int episodeWindow = INITIAL_EPISODE_WINDOW;
     private boolean loadingMore = false;
+    private boolean meteredToastShown = false;
     private SharedPreferences prefs;
 
     /**
@@ -175,6 +178,14 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
                         return;
                     }
                     if (firstVisible + visibleCount >= totalCount - 4) {
+                        if (isMeteredConnection()) {
+                            if (!meteredToastShown) {
+                                meteredToastShown = true;
+                                Toast.makeText(getContext(), R.string.discover_metered_episodes,
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                            return;
+                        }
                         loadingMore = true;
                         episodeWindow = Math.min(episodeWindow + EPISODE_WINDOW_STEP, MAX_EPISODE_WINDOW);
                         currentLimit = Math.min(MAX_TOP_PODCASTS, Math.max(currentLimit, episodeWindow));
@@ -252,6 +263,16 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
         currentLimit = INITIAL_TOP_PODCASTS;
         episodeWindow = INITIAL_EPISODE_WINDOW;
         loadingMore = false;
+        meteredToastShown = false;
+    }
+
+    private boolean isMeteredConnection() {
+        if (getContext() == null) {
+            return false;
+        }
+        ConnectivityManager connectivityManager =
+                (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        return connectivityManager != null && connectivityManager.isActiveNetworkMetered();
     }
 
     @Override
