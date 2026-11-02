@@ -25,6 +25,7 @@ public class ItunesTopListLoader {
     private final Context context;
     public static final String PREF_KEY_COUNTRY_CODE = "country_code";
     public static final String PREF_KEY_GENRE_ID = "genre_id";
+    public static final String PREF_KEY_CONTENT_TYPE = "content_type";
     public static final String PREF_KEY_HIDDEN_DISCOVERY_COUNTRY = "hidden_discovery_country";
     public static final String PREF_KEY_NEEDS_CONFIRM = "needs_confirm";
     public static final String PREFS = "CountryRegionPrefs";

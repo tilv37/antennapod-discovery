@@ -28,7 +28,10 @@ import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.event.DiscoveryDefaultUpdateEvent;
 import de.danoeh.antennapod.net.discovery.ItunesTopListLoader;
 import de.danoeh.antennapod.net.discovery.PodcastSearchResult;
+import de.danoeh.antennapod.net.discovery.TopEpisode;
+import de.danoeh.antennapod.net.discovery.TopEpisodesLoader;
 import de.danoeh.antennapod.ui.appstartintent.OnlineFeedviewActivityStarter;
+import de.danoeh.antennapod.ui.common.Converter;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -51,7 +54,13 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
     private static final int INITIAL_TOP_PODCASTS = 50;
     private static final int TOP_PODCASTS_STEP = 50;
     private static final int MAX_TOP_PODCASTS = 200;
+    private static final int INITIAL_EPISODE_WINDOW = 30;
+    private static final int EPISODE_WINDOW_STEP = 30;
+    private static final int MAX_EPISODE_WINDOW = 120;
+    private static final String CONTENT_SHOWS = "shows";
+    private static final String CONTENT_EPISODES = "episodes";
     private int currentLimit = INITIAL_TOP_PODCASTS;
+    private int episodeWindow = INITIAL_EPISODE_WINDOW;
     private boolean loadingMore = false;
     private SharedPreferences prefs;
 
@@ -73,10 +82,12 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
     private Disposable disposable;
     private String countryCode = "CN";
     private String genreId = "";
+    private String contentType = CONTENT_SHOWS;
     private boolean hidden;
     private boolean needsConfirm;
     private MaterialToolbar toolbar;
     private ChipGroup genreChipGroup;
+    private ChipGroup contentChipGroup;
 
     private static final String[] GENRE_IDS = {"", "1318", "1321", "1489", "1303", "1324", "1302", "1317", "1305"};
     private static final int[] GENRE_LABELS = {R.string.discover_genre_all, R.string.discover_genre_technology,
@@ -115,6 +126,7 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
         prefs = getActivity().getSharedPreferences(ItunesTopListLoader.PREFS, Context.MODE_PRIVATE);
         countryCode = prefs.getString(ItunesTopListLoader.PREF_KEY_COUNTRY_CODE, "CN");
         genreId = prefs.getString(ItunesTopListLoader.PREF_KEY_GENRE_ID, "");
+        contentType = prefs.getString(ItunesTopListLoader.PREF_KEY_CONTENT_TYPE, CONTENT_SHOWS);
         hidden = prefs.getBoolean(ItunesTopListLoader.PREF_KEY_HIDDEN_DISCOVERY_COUNTRY, false);
         needsConfirm = prefs.getBoolean(ItunesTopListLoader.PREF_KEY_NEEDS_CONFIRM, true);
     }
@@ -137,6 +149,9 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
         genreChipGroup = root.findViewById(R.id.genreChipGroup);
         setupGenreChips();
 
+        contentChipGroup = root.findViewById(R.id.contentChipGroup);
+        setupContentChips();
+
         //Show information about the podcast when the list item is clicked
         gridView.setOnItemClickListener((parent, view1, position, id) -> {
             PodcastSearchResult podcast = searchResults.get(position);
@@ -153,6 +168,18 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
             @Override
             public void onScroll(AbsListView view, int firstVisible, int visibleCount, int totalCount) {
                 if (loadingMore || searchResults == null || searchResults.isEmpty()) {
+                    return;
+                }
+                if (CONTENT_EPISODES.equals(contentType)) {
+                    if (episodeWindow >= MAX_EPISODE_WINDOW || searchResults.size() < episodeWindow) {
+                        return;
+                    }
+                    if (firstVisible + visibleCount >= totalCount - 4) {
+                        loadingMore = true;
+                        episodeWindow = Math.min(episodeWindow + EPISODE_WINDOW_STEP, MAX_EPISODE_WINDOW);
+                        currentLimit = Math.min(MAX_TOP_PODCASTS, Math.max(currentLimit, episodeWindow));
+                        loadToplist(countryCode, genreId);
+                    }
                     return;
                 }
                 if (currentLimit >= MAX_TOP_PODCASTS || searchResults.size() < currentLimit) {
@@ -185,7 +212,7 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
             final String id = GENRE_IDS[i];
             chip.setOnClickListener(v -> {
                 genreId = id;
-                currentLimit = INITIAL_TOP_PODCASTS;
+                resetPaging();
                 prefs.edit().putString(ItunesTopListLoader.PREF_KEY_GENRE_ID, genreId).apply();
                 for (int j = 0; j < genreChipGroup.getChildCount(); j++) {
                     Chip other = (Chip) genreChipGroup.getChildAt(j);
@@ -195,6 +222,36 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
             });
             genreChipGroup.addView(chip);
         }
+    }
+
+    private void setupContentChips() {
+        contentChipGroup.removeAllViews();
+        addContentChip(R.string.discover_content_shows, CONTENT_SHOWS);
+        addContentChip(R.string.discover_content_episodes, CONTENT_EPISODES);
+    }
+
+    private void addContentChip(int labelRes, String type) {
+        Chip chip = new Chip(getContext());
+        chip.setText(labelRes);
+        chip.setCheckable(true);
+        chip.setChecked(type.equals(contentType));
+        chip.setOnClickListener(v -> {
+            contentType = type;
+            resetPaging();
+            prefs.edit().putString(ItunesTopListLoader.PREF_KEY_CONTENT_TYPE, contentType).apply();
+            for (int j = 0; j < contentChipGroup.getChildCount(); j++) {
+                Chip other = (Chip) contentChipGroup.getChildAt(j);
+                other.setChecked(other == chip);
+            }
+            loadToplist(countryCode, genreId);
+        });
+        contentChipGroup.addView(chip);
+    }
+
+    private void resetPaging() {
+        currentLimit = INITIAL_TOP_PODCASTS;
+        episodeWindow = INITIAL_EPISODE_WINDOW;
+        loadingMore = false;
     }
 
     @Override
@@ -247,17 +304,25 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
 
         ItunesTopListLoader loader = new ItunesTopListLoader(getContext());
         final String loadGenre = genre;
-        final int fetchLimit = currentLimit;
+        final int fetchLimit = CONTENT_EPISODES.equals(contentType)
+                ? Math.max(currentLimit, episodeWindow) : currentLimit;
         disposable = Observable.fromCallable(() ->
                         loader.loadToplist(country, loadGenre, fetchLimit, DBReader.getFeedList()))
                 .subscribeOn(Schedulers.io())
+                .map(shows -> {
+                    topList = shows;
+                    if (CONTENT_EPISODES.equals(contentType)) {
+                        TopEpisodesLoader episodesLoader = new TopEpisodesLoader(getContext());
+                        return toSearchResults(episodesLoader.loadTopEpisodes(shows, episodeWindow));
+                    }
+                    return shows;
+                })
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                     podcasts -> {
                         progressBar.setVisibility(View.GONE);
                         loadingMore = false;
-                        topList = podcasts;
-                        updateData(topList);
+                        updateData(podcasts);
                     }, error -> {
                         Log.e(TAG, Log.getStackTraceString(error));
                         progressBar.setVisibility(View.GONE);
@@ -269,6 +334,20 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
                     });
     }
 
+    private List<PodcastSearchResult> toSearchResults(List<TopEpisode> episodes) {
+        List<PodcastSearchResult> results = new ArrayList<>();
+        for (TopEpisode episode : episodes) {
+            String author = episode.showTitle;
+            if (episode.durationMs > 0) {
+                author += " · " + Converter.getDurationStringShort(episode.durationMs,
+                        episode.durationMs >= 3600000);
+            }
+            results.add(new PodcastSearchResult(episode.title, episode.imageUrl,
+                    episode.feedUrl, author));
+        }
+        return results;
+    }
+
     @Override
     public boolean onMenuItemClick(MenuItem item) {
         final int itemId = item.getItemId();
@@ -278,8 +357,7 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
             prefs.edit().putBoolean(ItunesTopListLoader.PREF_KEY_HIDDEN_DISCOVERY_COUNTRY, hidden).apply();
 
             EventBus.getDefault().post(new DiscoveryDefaultUpdateEvent());
-            currentLimit = INITIAL_TOP_PODCASTS;
-            loadingMore = false;
+            resetPaging();
             loadToplist(countryCode, genreId);
             return true;
         } else if (itemId == R.id.discover_countries_item) {
@@ -334,8 +412,7 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
                 prefs.edit().putString(ItunesTopListLoader.PREF_KEY_COUNTRY_CODE, countryCode).apply();
 
                 EventBus.getDefault().post(new DiscoveryDefaultUpdateEvent());
-                currentLimit = INITIAL_TOP_PODCASTS;
-                loadingMore = false;
+                resetPaging();
                 loadToplist(countryCode, genreId);
             });
             builder.setNegativeButton(R.string.cancel_label, null);
