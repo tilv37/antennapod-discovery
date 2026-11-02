@@ -23,6 +23,7 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import androidx.core.text.HtmlCompat;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.android.material.textfield.TextInputLayout;
 import de.danoeh.antennapod.net.discovery.BuildConfig;
@@ -73,6 +74,7 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
      * Adapter responsible with the search results.
      */
     private OnlineSearchAdapter adapter;
+    private EpisodeSearchAdapter episodeAdapter;
     private GridView gridView;
     private ProgressBar progressBar;
     private TextView txtvError;
@@ -114,6 +116,21 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
      */
     private void updateData(List<PodcastSearchResult> result) {
         this.searchResults = result;
+        if (CONTENT_EPISODES.equals(contentType)) {
+            episodeAdapter.clear();
+            if (result != null && result.size() > 0) {
+                gridView.setVisibility(View.VISIBLE);
+                txtvEmpty.setVisibility(View.GONE);
+                for (PodcastSearchResult p : result) {
+                    episodeAdapter.add(p);
+                }
+                episodeAdapter.notifyDataSetInvalidated();
+            } else {
+                gridView.setVisibility(View.GONE);
+                txtvEmpty.setVisibility(View.VISIBLE);
+            }
+            return;
+        }
         adapter.clear();
         if (result != null && result.size() > 0) {
             gridView.setVisibility(View.VISIBLE);
@@ -145,7 +162,19 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
         View root = inflater.inflate(R.layout.fragment_online_search, container, false);
         gridView = root.findViewById(R.id.gridView);
         adapter = new OnlineSearchAdapter(getActivity(), new ArrayList<>());
-        gridView.setAdapter(adapter);
+        episodeAdapter = new EpisodeSearchAdapter(getActivity(), new ArrayList<>());
+        episodeAdapter.setEpisodeClickListener(new EpisodeSearchAdapter.EpisodeClickListener() {
+            @Override
+            public void onEpisodeClicked(int position) {
+                showEpisodeDialog(position);
+            }
+
+            @Override
+            public void onShowClicked(int position) {
+                openEpisodeShow(position);
+            }
+        });
+        gridView.setAdapter(CONTENT_EPISODES.equals(contentType) ? episodeAdapter : adapter);
 
         toolbar = root.findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(v -> getParentFragmentManager().popBackStack());
@@ -163,7 +192,7 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
         //Show information about the podcast when the list item is clicked
         gridView.setOnItemClickListener((parent, view1, position, id) -> {
             if (CONTENT_EPISODES.equals(contentType)) {
-                openEpisodeShow(position);
+                showEpisodeDialog(position);
                 return;
             }
             PodcastSearchResult podcast = searchResults.get(position);
@@ -263,6 +292,7 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
                 Chip other = (Chip) contentChipGroup.getChildAt(j);
                 other.setChecked(other == chip);
             }
+            gridView.setAdapter(CONTENT_EPISODES.equals(contentType) ? episodeAdapter : adapter);
             loadToplist(countryCode, genreId);
         });
         contentChipGroup.addView(chip);
@@ -386,6 +416,28 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
                     episode.feedUrl, author));
         }
         return results;
+    }
+
+    private void showEpisodeDialog(int position) {
+        if (currentEpisodes == null || position < 0 || position >= currentEpisodes.size()) {
+            return;
+        }
+        TopEpisode episode = currentEpisodes.get(position);
+        StringBuilder message = new StringBuilder(episode.showTitle);
+        if (episode.durationMs > 0) {
+            message.append(" · ").append(Converter.getDurationStringShort(episode.durationMs,
+                    episode.durationMs >= 3600000));
+        }
+        if (episode.description != null && !episode.description.trim().isEmpty()) {
+            message.append("\n\n").append(HtmlCompat.fromHtml(episode.description,
+                    HtmlCompat.FROM_HTML_MODE_LEGACY).toString().trim());
+        }
+        new MaterialAlertDialogBuilder(getContext())
+                .setTitle(episode.title)
+                .setMessage(message.toString())
+                .setPositiveButton(R.string.open_podcast, (dialog, which) -> openEpisodeShow(position))
+                .setNegativeButton(R.string.cancel_label, null)
+                .show();
     }
 
     private void openEpisodeShow(int position) {

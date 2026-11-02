@@ -91,8 +91,8 @@ public class TopEpisodesLoader {
                 imageUrl = show.imageUrl;
             }
             long pubDateMillis = newest.getPubDate() == null ? 0 : newest.getPubDate().getTime();
-            return new TopEpisode(newest.getTitle(), show.title, imageUrl, rssUrl,
-                    durationMs, pubDateMillis);
+            return new TopEpisode(newest.getTitle(), show.title, imageUrl, rssUrl, null,
+                    newest.getDescription(), durationMs, pubDateMillis);
         } finally {
             if (!tmp.delete()) {
                 Log.d(TAG, "Failed to delete temp file");

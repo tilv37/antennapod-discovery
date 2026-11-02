@@ -60,7 +60,6 @@ public class AmpChartsLoader {
         for (int i = 0; i < data.length(); i++) {
             JSONObject attributes = data.getJSONObject(i).getJSONObject("attributes");
             String title = attributes.optString("name", "");
-            String showTitle = attributes.optString("artistName", "");
             if (title.isEmpty()) {
                 continue;
             }
@@ -72,8 +71,16 @@ public class AmpChartsLoader {
                     imageUrl = imageUrl.replace("{w}x{h}", "400x400").replace("{f}", "jpg");
                 }
             }
-            episodes.add(new TopEpisode(title, showTitle, imageUrl, null,
-                    attributes.optString("assetUrl", null),
+            String description = null;
+            JSONObject descriptionJson = attributes.optJSONObject("description");
+            if (descriptionJson != null) {
+                description = descriptionJson.optString("standard", null);
+                if (description == null || description.isEmpty()) {
+                    description = descriptionJson.optString("short", null);
+                }
+            }
+            episodes.add(new TopEpisode(title, attributes.optString("artistName", ""), imageUrl, null,
+                    attributes.optString("assetUrl", null), description,
                     attributes.optInt("durationInMilliseconds", 0), 0));
         }
         return episodes;
