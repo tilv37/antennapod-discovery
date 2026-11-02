@@ -28,6 +28,8 @@ import com.google.android.material.textfield.TextInputLayout;
 import de.danoeh.antennapod.net.discovery.BuildConfig;
 import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.event.DiscoveryDefaultUpdateEvent;
+import de.danoeh.antennapod.net.discovery.AmpChartsLoader;
+import de.danoeh.antennapod.net.discovery.ItunesPodcastSearcher;
 import de.danoeh.antennapod.net.discovery.ItunesTopListLoader;
 import de.danoeh.antennapod.net.discovery.PodcastSearchResult;
 import de.danoeh.antennapod.net.discovery.TopEpisode;
@@ -82,7 +84,10 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
      */
     private List<PodcastSearchResult> searchResults;
     private List<PodcastSearchResult> topList;
+    private List<TopEpisode> currentEpisodes;
+    private final Map<String, String> showFeedCache = new HashMap<>();
     private Disposable disposable;
+    private Disposable tapDisposable;
     private String countryCode = "CN";
     private String genreId = "";
     private String contentType = CONTENT_SHOWS;
@@ -157,6 +162,10 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
 
         //Show information about the podcast when the list item is clicked
         gridView.setOnItemClickListener((parent, view1, position, id) -> {
+            if (CONTENT_EPISODES.equals(contentType)) {
+                openEpisodeShow(position);
+                return;
+            }
             PodcastSearchResult podcast = searchResults.get(position);
             if (podcast.feedUrl == null) {
                 return;
@@ -281,6 +290,9 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
         if (disposable != null) {
             disposable.dispose();
         }
+        if (tapDisposable != null) {
+            tapDisposable.dispose();
+        }
         adapter = null;
     }
 
@@ -333,6 +345,12 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
                 .map(shows -> {
                     topList = shows;
                     if (CONTENT_EPISODES.equals(contentType)) {
+                        try {
+                            return toSearchResults(AmpChartsLoader.loadTopEpisodes(
+                                    country, loadGenre, fetchLimit));
+                        } catch (Exception e) {
+                            Log.w(TAG, "Amp charts failed, falling back to RSS", e);
+                        }
                         TopEpisodesLoader episodesLoader = new TopEpisodesLoader(getContext());
                         return toSearchResults(episodesLoader.loadTopEpisodes(shows, episodeWindow));
                     }
@@ -356,6 +374,7 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
     }
 
     private List<PodcastSearchResult> toSearchResults(List<TopEpisode> episodes) {
+        currentEpisodes = episodes;
         List<PodcastSearchResult> results = new ArrayList<>();
         for (TopEpisode episode : episodes) {
             String author = episode.showTitle;
@@ -367,6 +386,47 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
                     episode.feedUrl, author));
         }
         return results;
+    }
+
+    private void openEpisodeShow(int position) {
+        if (currentEpisodes == null || position < 0 || position >= currentEpisodes.size()) {
+            return;
+        }
+        TopEpisode episode = currentEpisodes.get(position);
+        if (episode.feedUrl != null) {
+            startActivity(new OnlineFeedviewActivityStarter(getContext(), episode.feedUrl).getIntent());
+            return;
+        }
+        String cached = showFeedCache.get(episode.showTitle);
+        if (cached != null) {
+            startActivity(new OnlineFeedviewActivityStarter(getContext(), cached).getIntent());
+            return;
+        }
+        if (tapDisposable != null) {
+            tapDisposable.dispose();
+        }
+        progressBar.setVisibility(View.VISIBLE);
+        tapDisposable = new ItunesPodcastSearcher().search(episode.showTitle)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(results -> {
+                    progressBar.setVisibility(View.GONE);
+                    for (PodcastSearchResult result : results) {
+                        if (result.feedUrl != null) {
+                            showFeedCache.put(episode.showTitle, result.feedUrl);
+                            startActivity(new OnlineFeedviewActivityStarter(
+                                    getContext(), result.feedUrl).getIntent());
+                            return;
+                        }
+                    }
+                    Toast.makeText(getContext(), R.string.search_status_no_results,
+                            Toast.LENGTH_SHORT).show();
+                }, error -> {
+                    progressBar.setVisibility(View.GONE);
+                    Log.e(TAG, Log.getStackTraceString(error));
+                    Toast.makeText(getContext(), R.string.search_status_no_results,
+                            Toast.LENGTH_SHORT).show();
+                });
     }
 
     @Override
