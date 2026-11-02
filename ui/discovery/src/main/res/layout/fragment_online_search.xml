@@ -26,30 +26,47 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <HorizontalScrollView
-        android:id="@+id/genreScroll"
+    <LinearLayout
+        android:id="@+id/filterContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/appbar"
-        android:clipToPadding="false"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:scrollbars="none">
+        android:orientation="vertical">
 
         <com.google.android.material.chip.ChipGroup
-            android:id="@+id/genreChipGroup"
+            android:id="@+id/contentChipGroup"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
             app:singleSelection="true"
             app:selectionRequired="true" />
 
-    </HorizontalScrollView>
+        <HorizontalScrollView
+            android:id="@+id/genreScroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/genreChipGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="true" />
+
+        </HorizontalScrollView>
+
+    </LinearLayout>
 
     <GridView
         android:id="@+id/gridView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/genreScroll"
+        android:layout_below="@id/filterContainer"
         android:clipToPadding="false"
         android:columnWidth="400dp"
         android:gravity="center"

@@ -61,6 +61,16 @@ android {
     }
 }
 
+// Name release/debug APKs with the app version, e.g.
+// antennapod-free-release-3.13.0-beta1.fork1(3130003).apk
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        def fileName = "antennapod-${variant.flavorName}-${variant.buildType}-" +
+                "${android.defaultConfig.versionName}(${android.defaultConfig.versionCode}).apk"
+        variant.outputs.forEach { it.outputFileName.set(fileName) }
+    }
+}
+
 dependencies {
     implementation project(":event")
     implementation project(':model')

@@ -916,6 +916,9 @@
     <string name="discover_genre_education">Education</string>
     <string name="discover_genre_health">Health &amp; Fitness</string>
     <string name="discover_genre_kids">Kids &amp; Family</string>
+    <string name="discover_content_shows">Shows</string>
+    <string name="discover_content_episodes">Episodes</string>
+    <string name="discover_metered_episodes">Mobile data: showing fewer episodes to save data</string>
     <string name="search_powered_by">Results by %1$s</string>
     <string name="select_country">Select country</string>
 
