@@ -24,17 +24,23 @@ public class ItunesTopListLoader {
     private static final String TAG = "ITunesTopListLoader";
     private final Context context;
     public static final String PREF_KEY_COUNTRY_CODE = "country_code";
+    public static final String PREF_KEY_GENRE_ID = "genre_id";
     public static final String PREF_KEY_HIDDEN_DISCOVERY_COUNTRY = "hidden_discovery_country";
     public static final String PREF_KEY_NEEDS_CONFIRM = "needs_confirm";
     public static final String PREFS = "CountryRegionPrefs";
     public static final String COUNTRY_CODE_UNSET = "99";
-    private static final int NUM_LOADED = 25;
+    private static final int MAX_LOADED = 200;
 
     public ItunesTopListLoader(Context context) {
         this.context = context;
     }
 
     public List<PodcastSearchResult> loadToplist(String country, int limit, List<Feed> subscribed)
+            throws JSONException, IOException {
+        return loadToplist(country, "", limit, subscribed);
+    }
+
+    public List<PodcastSearchResult> loadToplist(String country, String genreId, int limit, List<Feed> subscribed)
             throws JSONException, IOException {
         OkHttpClient client = AntennapodHttpClient.getHttpClient();
         String feedString;
@@ -43,10 +49,10 @@ public class ItunesTopListLoader {
             loadCountry = Locale.getDefault().getCountry();
         }
         try {
-            feedString = getTopListFeed(client, loadCountry);
+            feedString = getTopListFeed(client, loadCountry, genreId, limit);
         } catch (IOException e) {
             if (COUNTRY_CODE_UNSET.equals(country)) {
-                feedString = getTopListFeed(client, "US");
+                feedString = getTopListFeed(client, "US", genreId, limit);
             } else {
                 throw e;
             }
@@ -75,8 +81,13 @@ public class ItunesTopListLoader {
         return suggestedNotSubscribed;
     }
 
-    private String getTopListFeed(OkHttpClient client, String country) throws IOException {
-        String url = "https://itunes.apple.com/%s/rss/toppodcasts/limit=" + NUM_LOADED + "/explicit=true/json";
+    private String getTopListFeed(OkHttpClient client, String country, String genreId, int limit) throws IOException {
+        int fetchLimit = Math.max(1, Math.min(limit, MAX_LOADED));
+        String genreSegment = "";
+        if (genreId != null && !genreId.isEmpty() && !"0".equals(genreId)) {
+            genreSegment = "/genre=" + genreId;
+        }
+        String url = "https://itunes.apple.com/%s/rss/toppodcasts/limit=" + fetchLimit + genreSegment + "/explicit=true/json";
         Log.d(TAG, "Feed URL " + String.format(url, country));
         Request.Builder httpReq = new Request.Builder()
                 .cacheControl(new CacheControl.Builder().maxStale(1, TimeUnit.DAYS).build())
