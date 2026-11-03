@@ -33,6 +33,7 @@ import de.danoeh.antennapod.net.discovery.AmpChartsLoader;
 import de.danoeh.antennapod.net.discovery.ItunesPodcastSearcher;
 import de.danoeh.antennapod.net.discovery.ItunesTopListLoader;
 import de.danoeh.antennapod.net.discovery.PodcastSearchResult;
+import de.danoeh.antennapod.net.discovery.PodcastSearcherRegistry;
 import de.danoeh.antennapod.net.discovery.TopEpisode;
 import de.danoeh.antennapod.net.discovery.TopEpisodesLoader;
 import de.danoeh.antennapod.ui.appstartintent.OnlineFeedviewActivityStarter;
@@ -449,7 +450,8 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
             startActivity(new OnlineFeedviewActivityStarter(getContext(), episode.feedUrl).getIntent());
             return;
         }
-        String cached = showFeedCache.get(episode.showTitle);
+        String cacheKey = episode.showId != null ? episode.showId : episode.showTitle;
+        String cached = showFeedCache.get(cacheKey);
         if (cached != null) {
             startActivity(new OnlineFeedviewActivityStarter(getContext(), cached).getIntent());
             return;
@@ -458,27 +460,43 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
             tapDisposable.dispose();
         }
         progressBar.setVisibility(View.VISIBLE);
-        tapDisposable = new ItunesPodcastSearcher().search(episode.showTitle)
+        final String key = cacheKey;
+        tapDisposable = resolveShowFeed(episode)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(results -> {
+                .subscribe(feedUrl -> {
                     progressBar.setVisibility(View.GONE);
-                    for (PodcastSearchResult result : results) {
-                        if (result.feedUrl != null) {
-                            showFeedCache.put(episode.showTitle, result.feedUrl);
-                            startActivity(new OnlineFeedviewActivityStarter(
-                                    getContext(), result.feedUrl).getIntent());
-                            return;
-                        }
+                    if (feedUrl != null) {
+                        showFeedCache.put(key, feedUrl);
+                        startActivity(new OnlineFeedviewActivityStarter(
+                                getContext(), feedUrl).getIntent());
+                    } else {
+                        Toast.makeText(getContext(), R.string.search_status_no_results,
+                                Toast.LENGTH_SHORT).show();
                     }
-                    Toast.makeText(getContext(), R.string.search_status_no_results,
-                            Toast.LENGTH_SHORT).show();
                 }, error -> {
                     progressBar.setVisibility(View.GONE);
                     Log.e(TAG, Log.getStackTraceString(error));
                     Toast.makeText(getContext(), R.string.search_status_no_results,
                             Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    private io.reactivex.rxjava3.core.Single<String> resolveShowFeed(TopEpisode episode) {
+        return io.reactivex.rxjava3.core.Single.fromCallable(() -> {
+            if (episode.showId != null) {
+                return PodcastSearcherRegistry.lookupUrl(
+                        "https://podcasts.apple.com/cn/podcast/x/id" + episode.showId)
+                        .blockingGet();
+            }
+            for (PodcastSearchResult result : new ItunesPodcastSearcher().search(episode.showTitle)
+                    .blockingGet()) {
+                if (result.feedUrl != null) {
+                    return result.feedUrl;
+                }
+            }
+            return null;
+        });
     }
 
     @Override

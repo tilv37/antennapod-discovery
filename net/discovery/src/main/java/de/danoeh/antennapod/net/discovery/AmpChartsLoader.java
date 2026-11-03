@@ -24,6 +24,7 @@ public class AmpChartsLoader {
     private static long cachedTokenExp;
     private static final Pattern JS_BUNDLE_PATTERN = Pattern.compile("/assets/index~[a-z0-9]+\\.js");
     private static final Pattern JWT_PATTERN = Pattern.compile("eyJ[a-zA-Z0-9_\\-.]+");
+    private static final Pattern SHOW_ID_PATTERN = Pattern.compile("/podcast/[^/]+/id(\\d+)");
 
     private AmpChartsLoader() {
     }
@@ -79,8 +80,13 @@ public class AmpChartsLoader {
                     description = descriptionJson.optString("short", null);
                 }
             }
+            String showId = null;
+            Matcher showIdMatcher = SHOW_ID_PATTERN.matcher(attributes.optString("url", ""));
+            if (showIdMatcher.find()) {
+                showId = showIdMatcher.group(1);
+            }
             episodes.add(new TopEpisode(title, attributes.optString("artistName", ""), imageUrl, null,
-                    attributes.optString("assetUrl", null), description,
+                    attributes.optString("assetUrl", null), description, showId,
                     attributes.optInt("durationInMilliseconds", 0), 0));
         }
         return episodes;
