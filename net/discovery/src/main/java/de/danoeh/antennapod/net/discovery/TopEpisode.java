@@ -15,6 +15,8 @@ public final class TopEpisode {
     public final String audioUrl;
     @Nullable
     public final String description;
+    @Nullable
+    public final String showId;
 
     public TopEpisode(String title, String showTitle, @Nullable String imageUrl,
                       String feedUrl, int durationMs, long pubDateMillis) {
@@ -29,12 +31,19 @@ public final class TopEpisode {
     public TopEpisode(String title, String showTitle, @Nullable String imageUrl,
                       String feedUrl, @Nullable String audioUrl, @Nullable String description,
                       int durationMs, long pubDateMillis) {
+        this(title, showTitle, imageUrl, feedUrl, audioUrl, description, null, durationMs, pubDateMillis);
+    }
+
+    public TopEpisode(String title, String showTitle, @Nullable String imageUrl,
+                      String feedUrl, @Nullable String audioUrl, @Nullable String description,
+                      @Nullable String showId, int durationMs, long pubDateMillis) {
         this.title = title;
         this.showTitle = showTitle;
         this.imageUrl = imageUrl;
         this.feedUrl = feedUrl;
         this.audioUrl = audioUrl;
         this.description = description;
+        this.showId = showId;
         this.durationMs = durationMs;
         this.pubDateMillis = pubDateMillis;
     }
