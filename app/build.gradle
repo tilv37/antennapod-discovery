@@ -16,7 +16,7 @@ android {
         // Fork versioning: keep the upstream base numbers below in sync with upstream
         // on every upstream merge, only bump forkBuild for own releases.
         // versionCode = upstream base + forkBuild, versionName = upstream base + ".fork<forkBuild>".
-        def forkBuild = 1
+        def forkBuild = 2
         versionCode 3130001 + forkBuild
         versionName "3.13.0-beta1.fork" + forkBuild
     }
