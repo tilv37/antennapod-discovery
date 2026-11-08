@@ -34,6 +34,7 @@ public class AboutFragment extends AnimatedPreferenceFragment {
 
         findPreference("about_version").setSummary(String.format(
                 "%s (%s)", versionName, BuildConfig.COMMIT_HASH));
+        findPreference("about_fork").setSummary(getString(R.string.about_fork_summary, versionName));
         findPreference("about_version").setOnPreferenceClickListener((preference) -> {
             ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
             ClipData clip = ClipData.newPlainText(getString(R.string.about_pref),

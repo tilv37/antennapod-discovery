@@ -49,6 +49,19 @@ public final class Converter {
     }
 
     /**
+     * Converts milliseconds to total minutes and seconds (MM:SS without hour rollover),
+     * so long and short episodes can never display the same string.
+     */
+    public static String getDurationStringMinutesSeconds(int duration) {
+        if (duration <= 0) {
+            return "00:00";
+        }
+        int minutes = duration / MINUTES_MIL;
+        int seconds = (duration - minutes * MINUTES_MIL) / SECONDS_MIL;
+        return String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds);
+    }
+
+    /**
      * Converts long duration string (HH:MM:SS) to milliseconds.
      */
     public static int durationStringLongToMs(String input) {
