@@ -25,6 +25,13 @@ public class ConverterTest {
     }
 
     @Test
+    public void testGetDurationStringMinutesSeconds() {
+        assertEquals("13:05", Converter.getDurationStringMinutesSeconds(785000));
+        assertEquals("80:00", Converter.getDurationStringMinutesSeconds(4800000));
+        assertEquals("00:00", Converter.getDurationStringMinutesSeconds(0));
+    }
+
+    @Test
     public void testDurationStringLongToMs() {
         String input = "01:20:30";
         long expected = 4830000;

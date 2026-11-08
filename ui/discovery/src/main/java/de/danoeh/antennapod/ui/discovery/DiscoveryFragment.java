@@ -410,8 +410,7 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
         for (TopEpisode episode : episodes) {
             String author = episode.showTitle;
             if (episode.durationMs > 0) {
-                author += " · " + Converter.getDurationStringShort(episode.durationMs,
-                        episode.durationMs >= 3600000);
+                author += " · " + Converter.getDurationStringMinutesSeconds(episode.durationMs);
             }
             results.add(new PodcastSearchResult(episode.title, episode.imageUrl,
                     episode.feedUrl, author));
@@ -426,8 +425,7 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
         TopEpisode episode = currentEpisodes.get(position);
         StringBuilder message = new StringBuilder(episode.showTitle);
         if (episode.durationMs > 0) {
-            message.append(" · ").append(Converter.getDurationStringShort(episode.durationMs,
-                    episode.durationMs >= 3600000));
+            message.append(" · ").append(Converter.getDurationStringMinutesSeconds(episode.durationMs));
         }
         if (episode.description != null && !episode.description.trim().isEmpty()) {
             message.append("\n\n").append(HtmlCompat.fromHtml(episode.description,
