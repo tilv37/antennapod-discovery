@@ -1,44 +1,52 @@
-# AntennaPod
+# antennapod-discovery
 
-[![GitHub check runs](https://img.shields.io/github/actions/workflow/status/AntennaPod/AntennaPod/checks.yml?branch=develop)](https://github.com/AntennaPod/AntennaPod/actions/workflows/checks.yml?query=branch%3Adevelop)
-[![License: GPL v3](https://img.shields.io/github/license/AntennaPod/AntennaPod)](https://www.gnu.org/licenses/gpl-3.0)
-[![GitHub Release](https://img.shields.io/github/v/release/AntennaPod/AntennaPod)](https://github.com/AntennaPod/AntennaPod/releases)
-[![https://img.shields.io/github/commits-since/AntennaPod/AntennaPod/latest/develop](https://img.shields.io/github/commits-since/AntennaPod/AntennaPod/latest/develop)](https://github.com/AntennaPod/AntennaPod/commits/develop/)
-[![Translations on Weblate](https://hosted.weblate.org/widget/antennapod/app/svg-badge.svg?native=1)](https://hosted.weblate.org/engage/antennapod/)
-[![Good first issue](https://img.shields.io/github/issues-search?query=repo%3AAntennaPod%2FAntennaPod%20is%3Aopen%20is%3Aissue%20label%3A%22Good%20first%20issue%22&label=Good%20first%20issue&labelColor=grey&color=%235F1984)](https://github.com/AntennaPod/AntennaPod/labels/Good%20first%20issue)
+AntennaPod fork by Shuo. Independent development — no merges back upstream,
+but upstream updates are merged in periodically (see `docs/SYNCING.md`).
 
-This is the official repository of AntennaPod, the easy-to-use, flexible and open-source podcast manager for Android.
+Base: AntennaPod `3.13.0-beta1` · this fork's versions append `.dsN`
+(e.g. `3.13.0-beta1.ds3`). License: GPL-3.0 (see `LICENSE`), same as upstream.
 
-[<img src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png"
-      alt="Get it on Google Play"
-      height="70">](https://play.google.com/store/apps/details?id=de.danoeh.antennapod)
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
-      alt="Get it on F-Droid"
-      height="70">](https://f-droid.org/app/de.danoeh.antennapod)
+## What is different from upstream
 
-<img src="https://raw.githubusercontent.com/AntennaPod/StoreMetadata/main/listings/en-US/graphics/phone-screenshots/00.png" alt="Screenshot 0" height="200"> <img src="https://raw.githubusercontent.com/AntennaPod/StoreMetadata/main/listings/en-US/graphics/phone-screenshots/01.png" alt="Screenshot 1" height="200"> <img src="https://raw.githubusercontent.com/AntennaPod/StoreMetadata/main/listings/en-US/graphics/phone-screenshots/02.png" alt="Screenshot 2" height="200"> <img src="https://raw.githubusercontent.com/AntennaPod/StoreMetadata/main/listings/en-US/graphics/phone-screenshots/03.png" alt="Screenshot 3" height="200"> <img src="https://raw.githubusercontent.com/AntennaPod/StoreMetadata/main/listings/en-US/graphics/phone-screenshots/04.png" alt="Screenshot 4" height="200"> <img src="https://raw.githubusercontent.com/AntennaPod/StoreMetadata/main/listings/en-US/graphics/phone-screenshots/05.png" alt="Screenshot 5" height="200">
+- Discover page: country + genre toplists, real Apple charts top episodes,
+  episode dialog, press feedback everywhere, single-fetch loading
+- About page states this is a modded build and links this repo
+- APK file names carry the version, e.g.
+  `antennapod-free-release-3.13.0-beta1.ds3(3130004).apk`
 
+## Build
 
-## Feedback
-You can use the [AntennaPod Forum](https://forum.antennapod.org/) for discussions about the app or just podcasting in general.
+Requirements: JDK 21, Android SDK (`ANDROID_HOME` set).
 
-Bug reports and feature requests can be submitted [here](https://github.com/AntennaPod/AntennaPod/issues) (please read the [instructions](https://github.com/AntennaPod/AntennaPod/blob/develop/CONTRIBUTING.md) on how to report a bug and how to submit a feature request first!).
+```sh
+./gradlew :app:assembleDebug
+```
 
-We also hold regular community calls to discuss anything AntennaPod-related. [Come join the next call](https://forum.antennapod.org/t/monthly-community-call/1869)!
+Debug builds install with `./gradlew --console=plain :app:installPlayDebug`.
 
-## Help to test AntennaPod
-AntennaPod has many users and we don't want them to run into trouble when we add a new feature. It's important that we have a significant group test our app, so that we know all possible combinations of phones, Android versions and use cases work as expected. Check out our wiki on how to join our [Beta testing program](https://antennapod.org/documentation/general/beta)! If a bug is reported during the beta period, chances are high that it will be fixed before the upcoming stable version. If it is reported later, fixing might take another full beta cycle. So definitely let us know if something is not right.
+Release builds are self-signed with a local keystore (`app/release.keystore`,
+gitignored — back it up, reinstalls need the same key):
 
-## License
+```sh
+./gradlew :app:assembleFreeRelease \
+  -PreleaseStoreFile=release.keystore \
+  -PreleaseStorePassword=<password> \
+  -PreleaseKeyAlias=<alias> \
+  -PreleaseKeyPassword=<password>
+```
 
-AntennaPod is licensed under the GNU General Public License (GPL-3.0). You can find the license text in the [LICENSE](https://github.com/AntennaPod/AntennaPod/blob/develop/LICENSE) file.
+Prefer the manual `Fork Release` GitHub Action: it builds the signed APK and
+publishes it to the Releases page. It needs four repository secrets:
+`KEYSTORE_BASE64` (base64 of the keystore), `RELEASE_STORE_PASSWORD`,
+`RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD`.
 
-## Translating AntennaPod
+## Workflow
 
-If you want to translate AntennaPod into another language, you can visit our [Weblate page](https://hosted.weblate.org/projects/antennapod/).
+- `develop` is the main branch. Never commit to it directly.
+- One feature branch per change, PR into `develop`, squash or merge, delete the branch.
+- Before a PR: `./gradlew checkstyle lint` plus on-device smoke test.
+- User-visible strings live in `ui/i18n/src/main/res/values/strings.xml` (English)
+  **and** `values-zh-rCN/strings.xml` (Chinese) — both edited by hand, no
+  translation platform in this fork.
 
-
-## Building AntennaPod
-
-You can build AntennaPod just like any other Android project. Refer to the [instructions](https://github.com/AntennaPod/AntennaPod/blob/develop/CONTRIBUTING.md) for more details.
-
+See `CONTRIBUTING.md` (short version) and `docs/SYNCING.md` (upstream sync).

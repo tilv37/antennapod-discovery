@@ -8,7 +8,7 @@ Just the bare instructions from the user.
 Do not ask for permission before making initial code changes.
 Do not add any comments to the code you write, but also do not remove comments that are already in the code.
 Whenever you add a user-visible string, add it to `:ui:i18n` so it can be translated. Do not start new strings files anywhere else.
-Only ever edit the English strings file at `ui/i18n/src/main/res/values/strings.xml`. Never modify translated strings files under `values-*/`.
+This fork has no translation platform: always update BOTH the English file at `ui/i18n/src/main/res/values/strings.xml` AND the Chinese file at `ui/i18n/src/main/res/values-zh-rCN/strings.xml` in the same change.
 Never reference the full package name of classes directly in the code, use imports.
 
 # Running and Testing
@@ -33,7 +33,7 @@ For running tests, use the command `./gradlew --console=plain` and use the task 
 As a final style check before opening a PR (or if a user explicitly asks for it), check the code style using:
 `./gradlew checkstyle lint`.
 
-# PR Conventions
+# PR Conventions (internal PRs into this fork's `develop`)
 When creating a PR, always read the PR template at `.github/pull_request_template.md` before starting and strictly follow it.
 The description goes above the checklist.
 Always mention the corresponding issue using `Closes: #<number>` in the description.
