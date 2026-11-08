@@ -15,6 +15,7 @@ import de.danoeh.antennapod.ui.preferences.R;
 import de.danoeh.antennapod.ui.preferences.screen.AnimatedPreferenceFragment;
 
 public class AboutFragment extends AnimatedPreferenceFragment {
+    private static final String FORK_REPO_URL = "https://github.com/tilv37/antennapod-discovery";
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
@@ -34,7 +35,12 @@ public class AboutFragment extends AnimatedPreferenceFragment {
 
         findPreference("about_version").setSummary(String.format(
                 "%s (%s)", versionName, BuildConfig.COMMIT_HASH));
-        findPreference("about_fork").setSummary(getString(R.string.about_fork_summary, versionName));
+        findPreference("about_fork").setSummary(getString(R.string.about_fork_summary, versionName)
+                + "\n" + FORK_REPO_URL);
+        findPreference("about_fork").setOnPreferenceClickListener(preference -> {
+            IntentUtils.openInBrowser(getContext(), FORK_REPO_URL);
+            return true;
+        });
         findPreference("about_version").setOnPreferenceClickListener((preference) -> {
             ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
             ClipData clip = ClipData.newPlainText(getString(R.string.about_pref),

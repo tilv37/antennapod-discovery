@@ -1,6 +1,6 @@
 name: Bug report
 description: Create a report to help us improve existing features
-labels: ["Type: Possible bug"]
+labels: ["bug"]
 body:
   - type: markdown
     attributes:
@@ -11,9 +11,9 @@ body:
     attributes:
       label: Checklist
       options:
-        - label: I have used the search function for [**OPEN**](https://github.com/AntennaPod/AntennaPod/issues) issues to see if someone else has already submitted the same bug report.
+        - label: I have used the search function for [**OPEN**](https://github.com/tilv37/antennapod-discovery/issues) issues to see if someone else has already submitted the same bug report.
           required: true
-        - label: I have **also** used the search function for [**CLOSED**](https://github.com/AntennaPod/AntennaPod/issues?q=is%3Aissue+is%3Aclosed) issues to see if the problem is already solved and just waiting to be released.
+        - label: I have **also** used the search function for [**CLOSED**](https://github.com/tilv37/antennapod-discovery/issues?q=is%3Aissue+is%3Aclosed) issues to see if the problem is already solved and just waiting to be released.
           required: true
         - label: I will describe the problem with as much detail as possible.
           required: true
