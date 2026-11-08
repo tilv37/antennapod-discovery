@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag, must match versionName in app/build.gradle (e.g. v3.13.0-beta1.fork1)'
+        description: 'Release tag, must match versionName in app/build.gradle (e.g. v3.13.0-beta1.ds3)'
         required: true
       notes:
         description: 'Extra release notes (optional, appended after auto-generated notes)'

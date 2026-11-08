@@ -10,6 +10,10 @@
             android:icon="@drawable/ic_star"
             android:summary="1.7.2 (asd8qs)"/>
     <Preference
+            android:key="about_fork"
+            android:title="@string/about_fork_title"
+            android:icon="@drawable/ic_info"/>
+    <Preference
             android:key="about_contributors"
             android:icon="@drawable/ic_contributors"
             android:summary="@string/contributors_summary"
