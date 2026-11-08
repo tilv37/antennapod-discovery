@@ -16,7 +16,7 @@ android {
         // Fork versioning: keep the upstream base numbers below in sync with upstream
         // on every upstream merge, only bump dsBuild for own releases.
         // versionCode = upstream base + dsBuild, versionName = upstream base + ".ds<dsBuild>".
-        def dsBuild = 3
+        def dsBuild = 4
         versionCode 3130001 + dsBuild
         versionName "3.13.0-beta1.ds" + dsBuild
     }
@@ -62,7 +62,7 @@ android {
 }
 
 // Name release/debug APKs with the app version, e.g.
-// antennapod-free-release-3.13.0-beta1.ds3(3130004).apk
+// antennapod-free-release-3.13.0-beta1.ds4(3130005).apk
 androidComponents {
     onVariants(selector().all()) { variant ->
         def fileName = "antennapod-${variant.flavorName}-${variant.buildType}-" +
