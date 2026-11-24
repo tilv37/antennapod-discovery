@@ -43,8 +43,8 @@ publishes it to the Releases page. It needs four repository secrets:
 
 ## Workflow
 
-- `develop` is the main branch. Never commit to it directly.
-- One feature branch per change, PR into `develop`, squash or merge, delete the branch.
+- `master` is the main branch. Never commit to it directly.
+- One feature branch per change, PR into `master`, squash or merge, delete the branch.
 - Before a PR: `./gradlew checkstyle lint` plus on-device smoke test.
 - User-visible strings live in `ui/i18n/src/main/res/values/strings.xml` (English)
   **and** `values-zh-rCN/strings.xml` (Chinese) — both edited by hand, no

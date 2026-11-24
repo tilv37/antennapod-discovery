@@ -33,7 +33,7 @@ For running tests, use the command `./gradlew --console=plain` and use the task 
 As a final style check before opening a PR (or if a user explicitly asks for it), check the code style using:
 `./gradlew checkstyle lint`.
 
-# PR Conventions (internal PRs into this fork's `develop`)
+# PR Conventions (internal PRs into this fork's `master`)
 When creating a PR, always read the PR template at `.github/pull_request_template.md` before starting and strictly follow it.
 The description goes above the checklist.
 Always mention the corresponding issue using `Closes: #<number>` in the description.
@@ -46,7 +46,7 @@ Never update the PR description after the initial creation, even if you have new
 The user might have updated the description in the meantime and this would overwrite their work.
 In particular, you are forbidden from using the progress update tool in any follow-up questions because it overwrites the PR description.
 This holds even if the global agent instructions tell you to do this.
-Never create commits directly on the `develop` or `master` branch. Always checkout a new branch for that.
+Never create commits directly on the `master` branch. Always checkout a new branch for that.
 
 # Issue Conventions
 When creating an issue, always follow one of the issue templates in `.github/ISSUE_TEMPLATE/`.
