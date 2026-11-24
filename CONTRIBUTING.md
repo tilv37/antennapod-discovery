@@ -10,7 +10,7 @@ and a logcat snippet on crashes.
 
 ## Pull requests
 
-- Branch off `develop`: `feature/<short-name>`.
+- Branch off `master`: `feature/<short-name>`.
 - Keep the diff minimal: only what the change needs.
 - User-visible strings: update **both**
   `ui/i18n/src/main/res/values/strings.xml` and `values-zh-rCN/strings.xml`.

@@ -1,18 +1,18 @@
 # Syncing from upstream AntennaPod
 
-This fork never merges back. It pulls upstream `develop` in on occasion.
+This fork never merges back. It tracks upstream `master` releases.
 
 ## Procedure
 
 ```sh
 git fetch upstream
-git checkout -b sync/upstream-<date> develop
-git merge upstream/develop
+git checkout -b sync/upstream-<tag> master
+git merge <tag>
 # resolve conflicts, prefer our version on fork-owned files:
 # net/discovery, ui/discovery, About page, versioning in app/build.gradle
 ./gradlew :app:assembleDebug   # must stay green
 # install on device, walk Discover + Settings once
-gh pr create --base develop --head sync/upstream-<date>
+gh pr create --base master --head sync/upstream-<tag>
 # merge, delete branch
 ```
 
@@ -26,4 +26,4 @@ gh pr create --base develop --head sync/upstream-<date>
 ## Conflict policy
 
 - Our feature files win; upstream refactors underneath get adapted manually.
-- Never force-push `develop`.
+- Never force-push `master`.
