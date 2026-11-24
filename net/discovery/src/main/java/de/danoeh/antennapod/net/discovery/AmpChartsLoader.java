@@ -22,7 +22,7 @@ public class AmpChartsLoader {
     private static final long TOKEN_REFRESH_MARGIN_SEC = 86400;
     private static String cachedToken;
     private static long cachedTokenExp;
-    private static final Pattern JS_BUNDLE_PATTERN = Pattern.compile("/assets/index~[a-z0-9]+\\.js");
+    private static final Pattern JS_BUNDLE_PATTERN = Pattern.compile("/assets/index~[a-zA-Z0-9]+\\.js");
     private static final Pattern JWT_PATTERN = Pattern.compile("eyJ[a-zA-Z0-9_\\-.]+");
     private static final Pattern SHOW_ID_PATTERN = Pattern.compile("/podcast/[^/]+/id(\\d+)");
 
