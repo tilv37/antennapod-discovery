@@ -3,8 +3,9 @@
 AntennaPod fork by Shuo. Independent development — no merges back upstream,
 but upstream updates are merged in periodically (see `docs/SYNCING.md`).
 
-Base: AntennaPod `3.13.0-beta1` · this fork's versions append `.dsN`
-(e.g. `3.13.0-beta1.ds3`). License: GPL-3.0 (see `LICENSE`), same as upstream.
+Based on upstream AntennaPod, without pinning to a specific upstream version —
+upstream updates are merged in as needed. This fork's versions append `.dsN`
+(e.g. `x.y.z.dsN`). License: GPL-3.0 (see `LICENSE`), same as upstream.
 
 ## What is different from upstream
 
@@ -12,7 +13,7 @@ Base: AntennaPod `3.13.0-beta1` · this fork's versions append `.dsN`
   episode dialog, press feedback everywhere, single-fetch loading
 - About page states this is a modded build and links this repo
 - APK file names carry the version, e.g.
-  `antennapod-free-release-3.13.0-beta1.ds3(3130004).apk`
+  `antennapod-free-release-x.y.z.dsN(...).apk`
 
 ## Build
 
