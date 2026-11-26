@@ -1,7 +1,10 @@
 package de.danoeh.antennapod.ui.discovery;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -352,12 +355,32 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
             message.append("\n\n").append(HtmlCompat.fromHtml(episode.description,
                     HtmlCompat.FROM_HTML_MODE_LEGACY).toString().trim());
         }
-        new MaterialAlertDialogBuilder(getContext())
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getContext())
                 .setTitle(episode.title)
                 .setMessage(message.toString())
                 .setPositiveButton(R.string.open_podcast, (dialog, which) -> openEpisodeShow(position))
-                .setNegativeButton(R.string.cancel_label, null)
-                .show();
+                .setNegativeButton(R.string.cancel_label, null);
+        if (episode.audioUrl != null && !episode.audioUrl.isEmpty()) {
+            builder.setNeutralButton(R.string.play_label, (dialog, which) -> playEpisodeInApp(episode));
+        }
+        builder.show();
+    }
+
+    private void playEpisodeInApp(TopEpisode episode) {
+        if (tapDisposable != null) {
+            tapDisposable.dispose();
+        }
+        tapDisposable = EpisodeStreamStarter.start(getContext(), episode, () -> playEpisodeAudio(episode));
+    }
+
+    private void playEpisodeAudio(TopEpisode episode) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW)
+                    .setDataAndType(Uri.parse(episode.audioUrl), "audio/*"));
+        } catch (ActivityNotFoundException e) {
+            Log.e(TAG, Log.getStackTraceString(e));
+            Toast.makeText(getContext(), R.string.playback_error_generic, Toast.LENGTH_LONG).show();
+        }
     }
 
     private void openEpisodeShow(int position) {

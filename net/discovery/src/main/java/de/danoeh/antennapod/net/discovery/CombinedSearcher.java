@@ -14,9 +14,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class CombinedSearcher implements PodcastSearcher {
     private static final String TAG = "CombinedSearcher";
+    private static final long SEARCH_TIMEOUT_SEC = 8;
 
     public CombinedSearcher() {
     }
@@ -46,8 +48,55 @@ public class CombinedSearcher implements PodcastSearcher {
         }
 
         return Single.create((SingleOnSubscribe<List<PodcastSearchResult>>) subscriber -> {
-            latch.await();
+            latch.await(SEARCH_TIMEOUT_SEC, TimeUnit.SECONDS);
             List<PodcastSearchResult> results = weightSearchResults(singleResults);
+            subscriber.onSuccess(results);
+        })
+                .doOnDispose(() -> {
+                    for (Disposable disposable : disposables) {
+                        if (disposable != null) {
+                            disposable.dispose();
+                        }
+                    }
+                })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread());
+    }
+
+    @Override
+    public Single<List<TopEpisode>> searchEpisodes(String query) {
+        ArrayList<Disposable> disposables = new ArrayList<>();
+        List<List<TopEpisode>> singleResults = new ArrayList<>(
+                Collections.nCopies(PodcastSearcherRegistry.getSearchProviders().size(), null));
+        CountDownLatch latch = new CountDownLatch(PodcastSearcherRegistry.getSearchProviders().size());
+        for (int i = 0; i < PodcastSearcherRegistry.getSearchProviders().size(); i++) {
+            PodcastSearcherRegistry.SearcherInfo searchProviderInfo
+                    = PodcastSearcherRegistry.getSearchProviders().get(i);
+            PodcastSearcher searcher = searchProviderInfo.searcher;
+            if (searcher.getClass() == CombinedSearcher.class) {
+                latch.countDown();
+                continue;
+            }
+            final int index = i;
+            disposables.add(searcher.searchEpisodes(query).subscribe(e -> {
+                        singleResults.set(index, e);
+                        latch.countDown();
+                    }, throwable -> {
+                        Log.d(TAG, Log.getStackTraceString(throwable));
+                        latch.countDown();
+                    }
+            ));
+        }
+
+        return Single.create((SingleOnSubscribe<List<TopEpisode>>) subscriber -> {
+            latch.await(SEARCH_TIMEOUT_SEC, TimeUnit.SECONDS);
+            List<TopEpisode> results = new ArrayList<>();
+            for (List<TopEpisode> providerResults : singleResults) {
+                if (providerResults == null) {
+                    continue;
+                }
+                results.addAll(providerResults);
+            }
             subscriber.onSuccess(results);
         })
                 .doOnDispose(() -> {

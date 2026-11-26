@@ -15,13 +15,19 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ItunesPodcastSearcher implements PodcastSearcher {
     private static final String ITUNES_API_URL = "https://itunes.apple.com/search?media=podcast&term=%s";
+    private static final String ITUNES_EPISODE_API_URL =
+            "https://itunes.apple.com/search?media=podcast&entity=podcastEpisode&term=%s";
     private static final String PATTERN_BY_ID = ".*/podcasts\\.apple\\.com/.*/podcast/.*/id(\\d+).*";
 
     public ItunesPodcastSearcher() {
@@ -73,6 +79,84 @@ public class ItunesPodcastSearcher implements PodcastSearcher {
         })
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread());
+    }
+
+    @Override
+    public Single<List<TopEpisode>> searchEpisodes(String query) {
+        return Single.create((SingleOnSubscribe<List<TopEpisode>>) subscriber -> {
+            String encodedQuery;
+            try {
+                encodedQuery = URLEncoder.encode(query, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                // this won't ever be thrown
+                encodedQuery = query;
+            }
+
+            String formattedUrl = String.format(ITUNES_EPISODE_API_URL, encodedQuery);
+
+            OkHttpClient client = AntennapodHttpClient.getHttpClient();
+            Request.Builder httpReq = new Request.Builder()
+                    .url(formattedUrl);
+            List<TopEpisode> episodes = new ArrayList<>();
+            try {
+                Response response = client.newCall(httpReq.build()).execute();
+
+                if (response.isSuccessful()) {
+                    String resultString = response.body().string();
+                    JSONObject result = new JSONObject(resultString);
+                    JSONArray j = result.getJSONArray("results");
+
+                    for (int i = 0; i < j.length(); i++) {
+                        JSONObject episodeJson = j.getJSONObject(i);
+                        String title = episodeJson.optString("trackName", "");
+                        if (title.isEmpty()) {
+                            continue;
+                        }
+                        String showTitle = episodeJson.optString("collectionName", "Unknown");
+                        String imageUrl = episodeJson.optString("artworkUrl600", "");
+                        if (imageUrl.isEmpty()) {
+                            imageUrl = episodeJson.optString("artworkUrl160", "");
+                        }
+                        if (imageUrl.isEmpty()) {
+                            imageUrl = episodeJson.optString("artworkUrl60", "");
+                        }
+                        String feedUrl = episodeJson.optString("feedUrl", null);
+                        String audioUrl = episodeJson.optString("episodeUrl", null);
+                        String description = episodeJson.optString("description", null);
+                        if (description == null || description.isEmpty()) {
+                            description = episodeJson.optString("shortDescription", null);
+                        }
+                        long collectionId = episodeJson.optLong("collectionId", 0);
+                        String showId = collectionId != 0 ? String.valueOf(collectionId) : null;
+                        int durationMs = (int) episodeJson.optLong("trackTimeMillis", 0);
+                        long pubDateMillis = parseReleaseDate(episodeJson.optString("releaseDate", null));
+                        episodes.add(new TopEpisode(title, showTitle, imageUrl, feedUrl,
+                                audioUrl, description, showId, durationMs, pubDateMillis));
+                    }
+                } else {
+                    subscriber.onError(new IOException(response.toString()));
+                }
+            } catch (IOException | JSONException e) {
+                subscriber.onError(e);
+            }
+            subscriber.onSuccess(episodes);
+        })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread());
+    }
+
+    private static long parseReleaseDate(String releaseDate) {
+        if (releaseDate == null || releaseDate.isEmpty()) {
+            return 0;
+        }
+        try {
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+            format.setTimeZone(TimeZone.getTimeZone("UTC"));
+            Date date = format.parse(releaseDate);
+            return date != null ? date.getTime() : 0;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     @Override
