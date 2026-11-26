@@ -61,6 +61,53 @@ public class CombinedSearcher implements PodcastSearcher {
                 .observeOn(AndroidSchedulers.mainThread());
     }
 
+    @Override
+    public Single<List<TopEpisode>> searchEpisodes(String query) {
+        ArrayList<Disposable> disposables = new ArrayList<>();
+        List<List<TopEpisode>> singleResults = new ArrayList<>(
+                Collections.nCopies(PodcastSearcherRegistry.getSearchProviders().size(), null));
+        CountDownLatch latch = new CountDownLatch(PodcastSearcherRegistry.getSearchProviders().size());
+        for (int i = 0; i < PodcastSearcherRegistry.getSearchProviders().size(); i++) {
+            PodcastSearcherRegistry.SearcherInfo searchProviderInfo
+                    = PodcastSearcherRegistry.getSearchProviders().get(i);
+            PodcastSearcher searcher = searchProviderInfo.searcher;
+            if (searcher.getClass() == CombinedSearcher.class) {
+                latch.countDown();
+                continue;
+            }
+            final int index = i;
+            disposables.add(searcher.searchEpisodes(query).subscribe(e -> {
+                        singleResults.set(index, e);
+                        latch.countDown();
+                    }, throwable -> {
+                        Log.d(TAG, Log.getStackTraceString(throwable));
+                        latch.countDown();
+                    }
+            ));
+        }
+
+        return Single.create((SingleOnSubscribe<List<TopEpisode>>) subscriber -> {
+            latch.await();
+            List<TopEpisode> results = new ArrayList<>();
+            for (List<TopEpisode> providerResults : singleResults) {
+                if (providerResults == null) {
+                    continue;
+                }
+                results.addAll(providerResults);
+            }
+            subscriber.onSuccess(results);
+        })
+                .doOnDispose(() -> {
+                    for (Disposable disposable : disposables) {
+                        if (disposable != null) {
+                            disposable.dispose();
+                        }
+                    }
+                })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread());
+    }
+
     private List<PodcastSearchResult> weightSearchResults(List<List<PodcastSearchResult>> singleResults) {
         HashMap<String, Float> resultRanking = new HashMap<>();
         HashMap<String, PodcastSearchResult> urlToResult = new HashMap<>();
