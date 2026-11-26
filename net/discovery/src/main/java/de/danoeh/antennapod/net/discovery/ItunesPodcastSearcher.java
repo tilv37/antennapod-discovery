@@ -15,8 +15,12 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -125,8 +129,9 @@ public class ItunesPodcastSearcher implements PodcastSearcher {
                         long collectionId = episodeJson.optLong("collectionId", 0);
                         String showId = collectionId != 0 ? String.valueOf(collectionId) : null;
                         int durationMs = (int) episodeJson.optLong("trackTimeMillis", 0);
+                        long pubDateMillis = parseReleaseDate(episodeJson.optString("releaseDate", null));
                         episodes.add(new TopEpisode(title, showTitle, imageUrl, feedUrl,
-                                audioUrl, description, showId, durationMs, 0));
+                                audioUrl, description, showId, durationMs, pubDateMillis));
                     }
                 } else {
                     subscriber.onError(new IOException(response.toString()));
@@ -138,6 +143,20 @@ public class ItunesPodcastSearcher implements PodcastSearcher {
         })
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread());
+    }
+
+    private static long parseReleaseDate(String releaseDate) {
+        if (releaseDate == null || releaseDate.isEmpty()) {
+            return 0;
+        }
+        try {
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+            format.setTimeZone(TimeZone.getTimeZone("UTC"));
+            Date date = format.parse(releaseDate);
+            return date != null ? date.getTime() : 0;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     @Override

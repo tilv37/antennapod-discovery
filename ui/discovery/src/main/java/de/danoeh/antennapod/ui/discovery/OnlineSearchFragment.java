@@ -345,9 +345,16 @@ public class OnlineSearchFragment extends Fragment {
                 .setPositiveButton(R.string.open_podcast, (dialog, which) -> openEpisodeShow(position))
                 .setNegativeButton(R.string.cancel_label, null);
         if (episode.audioUrl != null && !episode.audioUrl.isEmpty()) {
-            builder.setNeutralButton(R.string.play_label, (dialog, which) -> playEpisodeAudio(episode));
+            builder.setNeutralButton(R.string.play_label, (dialog, which) -> playEpisodeInApp(episode));
         }
         builder.show();
+    }
+
+    private void playEpisodeInApp(TopEpisode episode) {
+        if (tapDisposable != null) {
+            tapDisposable.dispose();
+        }
+        tapDisposable = EpisodeStreamStarter.start(getContext(), episode, () -> playEpisodeAudio(episode));
     }
 
     private void playEpisodeAudio(TopEpisode episode) {
