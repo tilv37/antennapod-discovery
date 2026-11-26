@@ -14,9 +14,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class CombinedSearcher implements PodcastSearcher {
     private static final String TAG = "CombinedSearcher";
+    private static final long SEARCH_TIMEOUT_SEC = 8;
 
     public CombinedSearcher() {
     }
@@ -46,7 +48,7 @@ public class CombinedSearcher implements PodcastSearcher {
         }
 
         return Single.create((SingleOnSubscribe<List<PodcastSearchResult>>) subscriber -> {
-            latch.await();
+            latch.await(SEARCH_TIMEOUT_SEC, TimeUnit.SECONDS);
             List<PodcastSearchResult> results = weightSearchResults(singleResults);
             subscriber.onSuccess(results);
         })
@@ -87,7 +89,7 @@ public class CombinedSearcher implements PodcastSearcher {
         }
 
         return Single.create((SingleOnSubscribe<List<TopEpisode>>) subscriber -> {
-            latch.await();
+            latch.await(SEARCH_TIMEOUT_SEC, TimeUnit.SECONDS);
             List<TopEpisode> results = new ArrayList<>();
             for (List<TopEpisode> providerResults : singleResults) {
                 if (providerResults == null) {
